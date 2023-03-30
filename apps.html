@@ -6,10 +6,14 @@
 -->
 <html>
 	<head>
-		<title>Generic - Editorial by HTML5 UP</title>
+		<title>Applications</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		<link rel="stylesheet" href="assets/css/main.css" />
+		<!-- Import TensorFlow.js -->
+		<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
+		<!-- Import tfjs-vis -->
+		<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-vis@1.0.2/dist/tfjs-vis.umd.min.js"></script>
 	</head>
 	<body class="is-preload">
 
@@ -32,21 +36,56 @@
 
 							<!-- Content -->
 								<section>
-                                    <script src="script.js"></script>
 									<header class="main">
-										<h1>Can data science fill the gap between models and experiments?</h1>
+										<h1>Data-driven tool for the predictionn of fatigue curve of AM metals</h1>
 									</header>
 
-									<span class="image main"><img src="images/pic11.jpg" alt="" /></span>
+									<script src="run_tfmodel_fromfile.js"></script>
+									<div class="slidecontainer">
+										<p>Orientation: <span id="demo"></span></p>
+										<div>
+											<input type="radio" id="0" name="Orientation" value="0"
+												   checked>
+											<label for="0">0 °</label>
+											<input type="radio" id="45" name="Orientation" value="45">
+											<label for="45">45 °</label>
+											<input type="radio" id="90" name="Orientation" value="90">
+											<label for="90">90 °</label>
+										  </div>									  
+										</div>
+									  <div class="slidecontainer">
+										<p>Power: <span id="demo1"></span></p>
+										<input type="range" min="1" max="100" value="50" class="slider" id="Power"/>
+										<p>Hatch: <span id="demo2"></span></p>
+										<input type="range" min="1" max="100" value="50" class="slider" id="Hatch">
+										<p>Speed: <span id="demo3"></span></p>
+										<input type="range" min="1" max="100" value="50" class="slider" id="Speed">
+										<p>Layer thickness: <span id="demo4"></span></p>
+										<input type="range" min="1" max="100" value="50" class="slider" id="Layer_t">
+									  </div>
+									<!--Surface tratments-->
+									  <fieldset>
+										<legend>Treatments:</legend>
+										<div>
+											<input type="checkbox" id="HIP" name="surf_t" checked>
+											<label for="HIP">HIP</label>
+											<input type="checkbox" id="Machined" name="surf_t">
+											<label for="Machined">Machined</label>
+											<input type="checkbox" id="SB" name="surf_t">
+											<label for="SB">SB</label>
+											<input type="checkbox" id="EDM" name="surf_t">
+											<label for="EDM">EDM</label>
+											<input type="checkbox" id="LSP" name="surf_t">
+											<label for="LSP">LSP</label>
+											<input type="checkbox" id="SP" name="surf_t">
+											<label for="SP">SP</label>
+											<input type="checkbox" id="Polished" name="surf_t">
+											<label for="Polished">Polished</label>
+										</div>
+										<button onclick="showVisor()">Show Visor</button>
 
-									<p>Donec eget ex magna. Interdum et malesuada fames ac ante ipsum primis in faucibus. Pellentesque venenatis dolor imperdiet dolor mattis sagittis. Praesent rutrum sem diam, vitae egestas enim auctor sit amet. Pellentesque leo mauris, consectetur id ipsum sit amet, fergiat. Pellentesque in mi eu massa lacinia malesuada et a elit. Donec urna ex, lacinia in purus ac, pretium pulvinar mauris. Curabitur sapien risus, commodo eget turpis at, elementum convallis elit. Pellentesque enim turpis, hendrerit.</p>
-									<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis dapibus rutrum facilisis. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Etiam tristique libero eu nibh porttitor fermentum. Nullam venenatis erat id vehicula viverra. Nunc ultrices eros ut ultricies condimentum. Mauris risus lacus, blandit sit amet venenatis non, bibendum vitae dolor. Nunc lorem mauris, fringilla in aliquam at, euismod in lectus. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. In non lorem sit amet elit placerat maximus. Pellentesque aliquam maximus risus, vel sed vehicula.</p>
-									<p>Interdum et malesuada fames ac ante ipsum primis in faucibus. Pellentesque venenatis dolor imperdiet dolor mattis sagittis. Praesent rutrum sem diam, vitae egestas enim auctor sit amet. Pellentesque leo mauris, consectetur id ipsum sit amet, fersapien risus, commodo eget turpis at, elementum convallis elit. Pellentesque enim turpis, hendrerit tristique lorem ipsum dolor.</p>
-									<ul class="actions">
-										<li><a href="#" class="button">Learn more</a></li>
-									</ul>
+									</fieldset>
 									<hr class="major" />
-
 								</section>
 
 						</div>
@@ -139,6 +178,36 @@
 			<script src="assets/js/breakpoints.min.js"></script>
 			<script src="assets/js/util.js"></script>
 			<script src="assets/js/main.js"></script>
-
+			<script>
+				var slider1 = document.getElementById("Power");
+				var demo1 = document.getElementById("demo1");
+				demo1.innerHTML = slider1.value;
+				slider1.oninput = function() {
+				  demo1.innerHTML = this.value;
+				}
+				var slider2 = document.getElementById("Hatch");
+				var demo2 = document.getElementById("demo2");
+				demo2.innerHTML = slider2.value;
+				slider2.oninput = function() {
+				  demo2.innerHTML = this.value;
+				}
+				var slider3 = document.getElementById("Speed");
+				var demo3 = document.getElementById("demo3");
+				demo3.innerHTML = slider3.value;
+				slider3.oninput = function() {
+				  demo3.innerHTML = this.value;
+				}
+				var slider4 = document.getElementById("Layer_t");
+				var demo4 = document.getElementById("demo4");
+				demo4.innerHTML = slider4.value;
+				slider4.oninput = function() {
+				  demo4.innerHTML = this.value;
+				}
+			</script>
+			<script>
+				async function showVisor() {
+					tfvis.visor().open();
+				}</script>
+			
 	</body>
 </html>
