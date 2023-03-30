@@ -1,5 +1,3 @@
-console.log('Hello TensorFlow');
-
 /**
  * Get the car data reduced to just the variables we are interested
  * and cleaned of missing data.
