@@ -1,50 +1,25 @@
 async function run() {
     // Load and plot the original input data that we are going to train on.
-    loadData()
-  }
-  document.addEventListener('DOMContentLoaded', run);
-  function convertToTensor(data) {
-    // Wrapping these calculations in a tidy will dispose any
-    // intermediate tensors.
-  
-    return tf.tidy(() => {
-      // Step 1. Shuffle the data
-      tf.util.shuffle(data);
-  
-      // Step 2. Convert data to Tensor
-      const inputs = data.map(d => d.horsepower)
-      const labels = data.map(d => d.mpg);
-  
-      const inputTensor = tf.tensor2d(inputs, [inputs.length, 1]);
-      const labelTensor = tf.tensor2d(labels, [labels.length, 1]);
-  
-      //Step 3. Normalize the data to the range 0 - 1 using min-max scaling
-      const inputMax = inputTensor.max();
-      const inputMin = inputTensor.min();
-      const labelMax = labelTensor.max();
-      const labelMin = labelTensor.min();
-  
-      const normalizedInputs = inputTensor.sub(inputMin).div(inputMax.sub(inputMin));
-      const normalizedLabels = labelTensor.sub(labelMin).div(labelMax.sub(labelMin));
-  
-      return {
-        inputs: normalizedInputs,
-        labels: normalizedLabels,
-        // Return the min/max bounds so we can use them later.
-        inputMax,
-        inputMin,
-        labelMax,
-        labelMin,
-      }
-    });
+    await tfvis.visor().close()
+    const csvDataset = await loadData();
+    const numOfFeatures = (await csvDataset.columnNames()).length - numOfLables;
+    const model = await buildModel(numOfFeatures);
+    await trainModel(model, csvDataset)
+
   }
 
-const csvUrl = "/C:/Users/Administrator/Desktop/website/aciampaglia.github.io/database.csv";
+  document.addEventListener('DOMContentLoaded', run);
+  
+// Hyper-parameters
+const csvUrl = "database2.csv";
+const batchSize = 40
+const nEpochs = 300
+const numOfLables = 4;
+
+// Functions
 async function loadData() {
-   // We want to predict the column "medv", which represents a median value of
-   // a home (in $1000s), so we mark it as a label.
    const csvDataset = tf.data.csv(
-     csvUrl, {
+    csvUrl, {
        columnConfigs: {
          m1: {
            isLabel: true
@@ -57,16 +32,39 @@ async function loadData() {
          },
          q2: {
             isLabel: true
-         },
+         }
        }
      });
 
-   // Number of features is the number of column names minus one for the label
-   // column.
-   const numOfFeatures = (await csvDataset.columnNames()).length - 4;
+     return csvDataset;
+    }
 
+async function buildModel(numOfFeatures){
+   // Define the model.
+   // Define input, which has a size of 5 (not including batch dimension).
+    const input = tf.input({shape: [numOfFeatures,]});
+    const denseLayer1 = tf.layers.dense({units: 100, activation: 'tanh'});
+    const denseLayer2 = tf.layers.dense({units: 75, activation: 'tanh'});
+    const denseLayer3 = tf.layers.dense({units: 50, activation: 'tanh'});
+    const outputLayer = tf.layers.dense({units: numOfLables, activation: 'linear'});
+    // Obtain the output symbolic tensor by applying the layers on the input.
+    const output = outputLayer.apply(denseLayer3.apply(denseLayer2.apply(denseLayer1.apply(input))));
+    // Create the model based on the inputs.
+    const model = tf.model({inputs: input, outputs: output});
+    const surface = {name: 'Model Summary', tab: 'Model Inspection'};
+    tfvis.show.modelSummary(surface, model);
+
+    model.compile({
+        optimizer: tf.train.adam(0.001),
+        loss: 'meanSquaredError',
+        metrics: ['mse']
+    });
+
+    return await model;
+}
+    async function trainModel(model, csvDataset){
    // Prepare the Dataset for training.
-   const flattenedDataset =
+    const flattenedDataset =
      csvDataset
      .map(({xs, ys}) =>
        {
@@ -74,33 +72,48 @@ async function loadData() {
          // column name) to array form.
          return {xs:Object.values(xs), ys:Object.values(ys)};
        })
-     .batch(40);
-
-   // Define the model.
-   // Define input, which has a size of 5 (not including batch dimension).
-    const input = tf.input({shape: [numOfFeatures]});
-    const denseLayer1 = tf.layers.dense({units: 100, activation: 'tanh'});
-    const denseLayer2 = tf.layers.dense({units: 75, activation: 'tanh'});
-    const denseLayer3 = tf.layers.dense({units: 50, activation: 'tanh'});
-    // Obtain the output symbolic tensor by applying the layers on the input.
-    const output = denseLayer3.apply(denseLayer2.apply(denseLayer1.apply(input)));
-    // Create the model based on the inputs.
-    const model = tf.model({inputs: input, outputs: output});
-
-    model.compile({
-        optimizer: tf.train.sgd(0.000001),
-        loss: 'meanSquaredError'
-    });
+     .batch(batchSize);
 
    // Fit the model using the prepared Dataset
-   return model.fitDataset(flattenedDataset, {
-     epochs: 10000,
-     callbacks: {
+   const container = {name: 'Training process', tab: 'Model Inspection'}
+   const metrics = ['loss']
+   const opt = {callbacks:['onEpochEnd']}
+   const fitCallbacks = tfvis.show.fitCallbacks(container, metrics, opt);
+   const consoleCallback = {onEpochEnd: async (epoch, logs) => {
+    console.log(epoch + ':' + logs.loss);
+   }}
+   return await model.fitDataset(flattenedDataset, {
+     epochs: nEpochs,
+     callbacks: [fitCallbacks, consoleCallback] 
+/*      {
        onEpochEnd: async (epoch, logs) => {
          console.log(epoch + ':' + logs.loss);
-       }
+         tfvis.show.fitCallbacks(
+            {name: 'Training process', tab: 'Model Inspection'},
+            ['loss'],
+            { height: 200, callbacks: ['onEpochEnd']}
+          )
+        }
      }
-   });
+ */   });
 }
 
-  
+async function predict(model, inputData) {
+    const [xs, preds] = tf.tidy(() => {
+
+        const xsNorm = tf.linspace(4, 8, 100);
+        const predictions = model.predict(xsNorm.reshape([100, 1]));
+    
+        const unNormXs = xsNorm
+          .mul(inputMax.sub(inputMin))
+          .add(inputMin);
+    
+        const unNormPreds = predictions
+          .mul(labelMax.sub(labelMin))
+          .add(labelMin);
+    
+        // Un-normalize the data
+        return [unNormXs.dataSync(), unNormPreds.dataSync()];
+      });
+
+}
